@@ -1,0 +1,15 @@
+[package]
+name = "code-dump"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+
+[[bin]]
+name = 'generics_traits_1'
+path = 'src/generics_traits_1/main.rs'
+
+[[bin]]
+name = 'formatted_print'
+path = 'src/formatted_print/main.rs'
