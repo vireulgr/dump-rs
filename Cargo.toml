@@ -1,5 +1,5 @@
 [package]
-name = "code-dump"
+name = "dump-rs"
 version = "0.1.0"
 edition = "2024"
 
@@ -13,3 +13,7 @@ path = 'src/generics_traits_1/main.rs'
 [[bin]]
 name = 'formatted_print'
 path = 'src/formatted_print/main.rs'
+
+[[bin]]
+name = 'noob_grep'
+path = 'src/noob_grep/main.rs'

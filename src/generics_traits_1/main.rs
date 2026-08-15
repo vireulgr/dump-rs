@@ -1,7 +1,9 @@
 mod aggregator;
+mod text_decoration;
 
 use std::fmt::Display;
 use crate::aggregator::{SocialPost, Summary, notify};
+use crate::text_decoration::{LogLevel, print_decorated, LogMessage, HelpMessage};
 
 struct Pair<T> {
     x: T,
@@ -52,4 +54,18 @@ fn main() {
 
     a.cmp_display();
 
+    let log_message = LogMessage {
+        text: String::from("Some log message text"),
+        severity: LogLevel::Info,
+    };
+
+    let help_message = HelpMessage {
+        command: String::from("--help"),
+        short: String::from("-h"),
+        required: false,
+        description: String::from("Print help message and exit"),
+    };
+
+    print_decorated(&log_message);
+    print_decorated(&help_message);
 }
