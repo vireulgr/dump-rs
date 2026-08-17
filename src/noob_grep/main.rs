@@ -18,26 +18,6 @@ pub struct Config {
 ////////////////////////////////////////////////////////////////////////////////
 impl Config {
     // 
-    // pub fn build(args: &[String]) -> Result<Self, &'static str> {
-    //     if args.len() < 3 {
-    //         return Err("Not enough command line arguments");
-    //     }
-
-    //     let ignore_case = if args.len() == 4 {
-    //         args[3] == "--ignore-case"
-    //     }
-    //     else {
-    //         env::var("IGNORE_CASE").is_ok()
-    //     };
-
-    //     Ok(Config {
-    //         query: args[1].clone(),
-    //         file_path: args[2].clone(),
-    //         ignore_case,
-    //     })
-    // }
-
-    // 
     pub fn build2<T>(mut args: T) -> Result<Self, &'static str> 
         where T: Iterator<Item = String>
     {
@@ -78,24 +58,36 @@ fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
     let result = fs::read_to_string(cfg.file_path)?;
     //println!("content:\n{}", result);
 
-    let found = if cfg.ignore_case {
-        search_case_insensitive(&cfg.query, &result)
+    //let found = if cfg.ignore_case {
+    //    search_case_insensitive(&cfg.query, &result)
+    //}
+    //else {
+    //    search(&cfg.query, &result)
+    //};
+
+    //for item in found {
+    //    println!("{item}");
+    //}
+    fn job<'a, T>(obj: T) 
+    where T: Iterator<Item = &'a str>
+    {
+        for item in obj {
+            println!("{item}");
+        }
+    }
+
+    if cfg.ignore_case {
+        job(search_case_insensitive(&cfg.query, &result))
     }
     else {
-        search(&cfg.query, &result)
-    };
-
-    for item in found {
-        println!("{item}");
+        job(search(&cfg.query, &result))
     }
+
     Ok(())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 fn main() {
-    //let cmd_args: Vec<String> = env::args().collect();
-
-    //let prog_config = Config::build(&cmd_args).unwrap_or_else(|res| {
     let prog_config = Config::build2(env::args()).unwrap_or_else(|res| {
         eprintln!("Config error {}", res);
         process::exit(1);
