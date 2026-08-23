@@ -1,4 +1,3 @@
-
 pub fn search<'a>(query: &str, content: &'a str) -> impl Iterator<Item = &'a str> {
     content
         .lines()

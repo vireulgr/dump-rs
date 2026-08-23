@@ -3,5 +3,13 @@
 version = 4
 
 [[package]]
-name = "dump-rs"
+name = "formatted_print"
+version = "0.1.0"
+
+[[package]]
+name = "generics_traits"
+version = "0.1.0"
+
+[[package]]
+name = "noob_grep"
 version = "0.1.0"

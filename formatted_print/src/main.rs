@@ -1,5 +1,4 @@
-mod formatted_print;
-use crate::formatted_print::{test, PI};
+use formatted_print::{test, PI};
 
 
 fn main() {

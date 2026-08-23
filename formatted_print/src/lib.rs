@@ -1,7 +1,7 @@
+
 use std::fmt;
 
 pub const PI: f64 = 3.14159265358979;
-
 
 // rust-by-example/hello/print/print_debug
 #[derive(Debug)]
@@ -86,7 +86,6 @@ impl fmt::Display for Color {
 }
 
 
-
 pub fn test() {
 
     let some = Deep(Structure(42));
@@ -143,5 +142,3 @@ pub fn test() {
         println!("{}", item);
     }
 }
-
-
