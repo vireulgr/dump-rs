@@ -25,10 +25,11 @@ fn run(some: Config) -> Result<(), &'static str> {
         Ok(s) => s,
         Err(err) => {
             eprintln!("{}", err);
-            return Err("cannot read file")
+            return Err("Cannot read file");
         }
     };
 
+    println!("{}", &text);
     let result = my_replace(&text);
 
     let mut replaced_file = match fs::File::create(format!("{}_replaced", &some.file_name)) {
@@ -45,7 +46,7 @@ fn run(some: Config) -> Result<(), &'static str> {
     Ok(())
 }
 
-fn my_replace(src: &str) -> String {
+fn replace_in_line(input: &str) -> String {
     let replaces = HashMap::from([
         ("var" , "\nvar"),
         ("let" , "\nlet"),
@@ -58,37 +59,47 @@ fn my_replace(src: &str) -> String {
         ("else" , "\nelse"),
         ("while" , "\nwhile"),
     ]);
+    let mut container = Vec::new();
 
+    for entry in &replaces {
+        let mut match_iter = input.split(entry.0);
+        container.push(String::from(match_iter.next().unwrap()));
+        let result_str = match_iter
+            .fold(
+                String::new(),
+                |mut acc, el| {
+                    acc.push_str(entry.1);
+                    acc.push_str(el);
 
-    let mut result_vec = Vec::new();
-    for line in src.lines() {
-        let mut container = Vec::new();
-        for entry in &replaces {
-            loop {
-                // поиск с конца
-                if let Some(new_pos) = line.rfind(entry.0) {
-                    // если нашли - заменяем
-                    let temp: String = line[new_pos..line.len()].into();
-                    // и сохраняем изменённую строку для последующей склейки в результат
-                    container.push(temp.replace(entry.0, entry.1));
+                    acc
                 }
-                else { // не нашли - к следующему варианту замены из replaces
-                    break;
-                }
-            }
-        }
-        let replaced_line = container.iter().rev().fold(String::from(""), |mut acc, item| {
-            acc.push_str(item);
-            acc
-        });
-        result_vec.push(replaced_line);
+            );
+        container.push(result_str);    
     }
 
+    container
+        .iter()
+        .fold(
+            String::new(),
+            |mut acc, item| {
+                acc.push_str(&item);
+                acc
+            }
+        )
+}
 
-    result_vec.iter().fold(String::from(""), |mut acc, item| {
-        acc.push_str(item);
-        acc
-    })
+fn my_replace(src: &str) -> String {
+
+    src
+        .lines()
+        .map(replace_in_line)
+        .fold(
+            String::from(""),
+            |mut acc, item| {
+                acc.push_str(&item);
+                acc
+            }
+        )
 }
 
 fn main() {
