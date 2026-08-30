@@ -55,18 +55,19 @@ fn replace_in_line(input: &str) -> String {
         ("class" , "\nclass"),
         ("try" , "\ntry"),
         ("catch" , "\ncatch"),
+        ("for", "\nfor"),
         ("if" , "\nif"),
         ("else" , "\nelse"),
         ("while" , "\nwhile"),
     ]);
-    let mut container = Vec::new();
+    let mut intermediate_res = String::from(input);
 
     for entry in &replaces {
-        let mut match_iter = input.split(entry.0);
-        container.push(String::from(match_iter.next().unwrap()));
-        let result_str = match_iter
+        let mut match_iter = intermediate_res.split(entry.0);
+        let temp_str = String::from(match_iter.next().unwrap());
+        intermediate_res = match_iter
             .fold(
-                String::new(),
+                temp_str,
                 |mut acc, el| {
                     acc.push_str(entry.1);
                     acc.push_str(el);
@@ -74,18 +75,9 @@ fn replace_in_line(input: &str) -> String {
                     acc
                 }
             );
-        container.push(result_str);    
     }
 
-    container
-        .iter()
-        .fold(
-            String::new(),
-            |mut acc, item| {
-                acc.push_str(&item);
-                acc
-            }
-        )
+    intermediate_res
 }
 
 fn my_replace(src: &str) -> String {
