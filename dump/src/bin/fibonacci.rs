@@ -1,4 +1,3 @@
-
 use std::io;
 
 fn main() {
@@ -37,4 +36,3 @@ fn main() {
 
     println!("fibonacci number {} is {}", value, fib_cur);
 }
-

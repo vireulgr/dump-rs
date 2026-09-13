@@ -1,4 +1,3 @@
-
 use std::io;
 
 fn c_to_f(c: i32) ->  i32 {
