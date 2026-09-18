@@ -33,14 +33,14 @@ pub mod cons_list {
     use std::cell::RefCell;
     pub enum RefCellList {
         Nil,
-        Cons(isize, Rc<RefCell<RefCellList>>),
+        Cons(Rc<RefCell<isize>>, Rc<RefCellList>),
     }
 
     impl fmt::Display for RefCellList {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 RefCellList::Nil => write!(f, "Nil"),
-                RefCellList::Cons(d, next) => write!(f, "{}, {}", d, next.borrow())
+                RefCellList::Cons(d, next) => write!(f, "{}, {}", d.borrow(), next)
             }
         }
     }
@@ -103,9 +103,28 @@ mod test {
 
     #[test]
     fn ref_cell_list_works() {
-        let rc = Rc::new(RefCell::new(RefCellList::Cons(
-                    3, Rc::new(RefCell::new(RefCellList::Cons(
-                                5, Rc::new(RefCell::new(RefCellList::Nil))))))));
-        println!("ref cell lsit\n{}", rc.borrow());
+        let rc = Rc::new(RefCellList::Cons(
+                    Rc::new(RefCell::new(3)), Rc::new(RefCellList::Cons(
+                                Rc::new(RefCell::new(5)), Rc::new(RefCellList::Nil)))));
+        println!("ref cell list\n{}", rc);
+    }
+
+    #[test]
+    fn ref_cell_list_change_value() {
+        let value = Rc::new(RefCell::new(41_isize));
+        let rc = Rc::new(RefCellList::Cons(
+                Rc::new(RefCell::new(5)), Rc::new(RefCellList::Cons(
+                        Rc::clone(&value), Rc::new(RefCellList::Nil)))));
+
+        // * to get rid of Rc, & to borrow inner type
+        if let RefCellList::Cons(_, next_lvl) = &*rc {
+             // 1st * for Rc, 2nd * for RefCell, & to borrow inner type
+            if let RefCellList::Cons(val, _) = &**next_lvl {            
+                println!("second value before change {}", *val.borrow());
+                *val.borrow_mut() += 1;
+            }
+        }
+        println!("ref cell list after \n{}", rc);
+        assert_eq!(&*value.borrow(), &42);
     }
 }
