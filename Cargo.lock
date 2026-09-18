@@ -19,9 +19,5 @@ name = "noob_grep"
 version = "0.1.0"
 
 [[package]]
-name = "smart_ptrs"
-version = "0.1.0"
-
-[[package]]
 name = "smart_ptrs_lib"
 version = "0.1.0"
