@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["dump","formatted_print","generics_traits", "noob_grep", "smart_ptrs_lib"]
+members = ["dump","formatted_print","generics_traits", "noob_grep", "noob_linked_list", "noob_linked_list_2", "rc_smart_ptr", "smart_ptrs_lib"]
