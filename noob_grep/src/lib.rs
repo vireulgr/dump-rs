@@ -23,7 +23,7 @@ Rust:
 safe, fast, productive.
 Pick three.
 Duct tape.";
-        assert_eq!(search(query, content).collect(), vec!["safe, fast, productive."]);
+        assert_eq!(search(query, content).collect::<Vec<_>>(), vec!["safe, fast, productive."]);
     }
 
     #[test]
@@ -34,6 +34,6 @@ Rust:
 safe, fast, productive.
 Pick three.
 Trust me.";
-        assert_eq!(search_case_insensitive(query, content).collect(), vec!["Rust:", "Trust me."]);
+        assert_eq!(search_case_insensitive(query, content).collect::<Vec<_>>(), vec!["Rust:", "Trust me."]);
     }
 }
