@@ -29,7 +29,7 @@ fn run(some: Config) -> Result<(), &'static str> {
         }
     };
 
-    println!("{}", &text);
+    //println!("{}", &text);
     let result = my_replace(&text);
 
     let mut replaced_file = match fs::File::create(format!("{}_replaced", &some.file_name)) {
@@ -48,11 +48,11 @@ fn run(some: Config) -> Result<(), &'static str> {
 
 fn replace_in_line(input: &str) -> String {
     let replaces = HashMap::from([
-        ("var" , "\nvar"),
-        ("let" , "\nlet"),
-        ("const" , "\nconst"),
-        ("return" , "\nreturn"),
-        ("class" , "\nclass"),
+        ("var " , "\nvar "),
+        ("let " , "\nlet "),
+        ("const " , "\nconst "),
+        ("return " , "\nreturn "),
+        ("class " , "\nclass "),
         ("try" , "\ntry"),
         ("catch" , "\ncatch"),
         ("for", "\nfor"),
