@@ -95,7 +95,7 @@
     }
 
     #[allow(unused)]
-    pub fn make_parser_zero_or_many<'a, T: 'a>(parser: Parser<'a, T>) -> Parser<'a, Vec<T>> {
+    pub fn make_parser_zero_or_many<'a, T: 'a>(parser: Parser<'a, T>, non_empty: bool) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
             let mut result_vec = Vec::new();
             let mut temp = String::from(text);
@@ -105,18 +105,9 @@
                 result_vec.push(result.0);
                 temp = result.1;
             }
-
-            //loop {
-            //    let maybe_result = parser(&temp);
-            //    match maybe_result {
-            //        Some(result) => {
-            //            if result.1 == temp { break; }
-            //            result_vec.push(result.0);
-            //            temp = result.1;
-            //        }
-            //        None => break,
-            //    }
-            //}
+            if result_vec.len() == 0 && non_empty {
+                return None;
+            }
             Some((result_vec, temp))
         })
     }
@@ -337,7 +328,8 @@ mod test {
                         ]
                     )
                 ]
-            )
+            ),
+            true
         )
     }
 
@@ -355,7 +347,8 @@ mod test {
             "rotate 1 right rotate 1 left rotate 1 forward 1 backward 2",
         ];
         let test_results: Vec<ParserResult<Vec<Vec<String>>>> = vec![
-            Some((vec![], "".to_string())),
+            //Some((vec![], "".to_string())),
+            None,
             Some((
                 vec![
                     vec!["rotate".to_string(), " ".to_string(), "1".to_string(), " ".to_string(), "right".to_string(), " ".to_string()],
