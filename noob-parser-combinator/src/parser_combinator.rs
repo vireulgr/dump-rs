@@ -13,6 +13,7 @@
         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].binary_search(c).is_ok()
     }
 
+    // captures foo in foobar string
     #[allow(unused)]
     pub fn make_parser_substring<'a>(pattern: &'a str) -> Parser<'a, String> {
         Box::new(move |text: &str| {
@@ -33,6 +34,7 @@
         })
     }
 
+    // captures cccc (where c is char) in strings like ccccamel
     #[allow(unused)]
     pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), non_empty: bool) -> Parser<'a, String> {
         Box::new(move |text: &str| {
@@ -62,6 +64,7 @@
         })
     }
 
+    // as /abcd/ in regex
     #[allow(unused)]
     pub fn make_parser_sequence<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
@@ -80,6 +83,7 @@
         })
     }
 
+    // as (a|b|c|d) in regex
     #[allow(unused)]
     pub fn make_parser_one_of<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, T> {
         Box::new(move |text: &str| {
@@ -94,6 +98,7 @@
         })
     }
 
+    // as (a)* or (a)+ depending on non_empty parameter
     #[allow(unused)]
     pub fn make_parser_zero_or_many<'a, T: 'a>(parser: Parser<'a, T>, non_empty: bool) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
@@ -112,6 +117,7 @@
         })
     }
 
+    // as (a)? in regular expressions
     #[allow(unused)]
     fn make_parser_optional<'a, T>(parser: Parser<'a, T>, default_val: T) -> Parser<'a, T> 
         where T: Clone + 'a
