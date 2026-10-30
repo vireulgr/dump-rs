@@ -13,6 +13,7 @@
         c.is_whitespace()
     }
 
+    // captures foo in foobar string
     #[allow(unused)]
     pub fn make_parser_substring<'a>(pattern: &'a str) -> Parser<'a, String> {
         Box::new(move |text: &str| {
@@ -33,6 +34,7 @@
         })
     }
 
+    // captures cccc (where c is char) in strings like ccccamel
     #[allow(unused)]
     pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), non_empty: bool) -> Parser<'a, String> {
         Box::new(move |text: &str| {
@@ -60,6 +62,7 @@
         })
     }
 
+    // as /abcd/ in regex
     #[allow(unused)]
     pub fn make_parser_sequence<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
@@ -78,6 +81,7 @@
         })
     }
 
+    // as (a|b|c|d) in regex
     #[allow(unused)]
     pub fn make_parser_one_of<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, T> {
         Box::new(move |text: &str| {
@@ -92,6 +96,7 @@
         })
     }
 
+    // as (a)* or (a)+ depending on non_empty parameter
     #[allow(unused)]
     pub fn make_parser_zero_or_many<'a, T: 'a>(parser: Parser<'a, T>, non_empty: bool) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
@@ -110,16 +115,15 @@
         })
     }
 
+    // as (a)? in regular expressions
     #[allow(unused)]
     fn make_parser_optional<'a, T>(parser: Parser<'a, T>, default_val: T) -> Parser<'a, T> 
         where T: Clone + 'a
     {
         Box::new(move |text: &str| {
             let local_value = default_val.clone();
-            //let local_default = default_val.clone();
             match parser(text) {
                 Some(result) => Some(result),
-                //None => Some((local_default, text.to_string()))
                 None => Some((local_value, text.to_string()))
             }
         })
@@ -163,7 +167,6 @@ mod test {
             Some(("".to_string(), "".to_string())),
         ];
         let spaces = make_parser_span_of(&whitespace_predicate, false);
-        //test_and_print(spaces, test_set_space.into_iter());
         test_and_assert(spaces, test_data.into_iter(), expected_data.into_iter());
     }
 
@@ -171,15 +174,14 @@ mod test {
     fn natural_number_parser_works() {
         let test_data = ["8", "2324", "8some", "foo8789", ""];
         let expected_data : Vec<ParserResult<String>> = vec![
-            Some(("8".to_string(), "".to_string()))     ,
-            Some(("2324".to_string(), "".to_string()))  ,
-            Some(("8".to_string(), "some".to_string())) ,
-            Some(("".to_string(), "foo8789".to_string())) ,
-            Some(("".to_string(), "".to_string()))      ,
+            Some(("8".to_string(), "".to_string())),
+            Some(("2324".to_string(), "".to_string())),
+            Some(("8".to_string(), "some".to_string())),
+            Some(("".to_string(), "foo8789".to_string())),
+            Some(("".to_string(), "".to_string())),
         ];
 
         let natural = make_parser_span_of(&natural_number_predicate, false);
-        //test_and_print(natural, test_set_natural.into_iter());
         test_and_assert(natural, test_data.into_iter(), expected_data.into_iter());
     }
 
@@ -194,7 +196,6 @@ mod test {
             None,
         ];
         let subs = make_parser_substring("foo");
-        //test_and_print(subs, test_data.into_iter());
         test_and_assert(subs, test_data.into_iter(), expected_data.into_iter());
     }
 
@@ -228,7 +229,6 @@ mod test {
                 "bar".to_string()
                 )
             ]);
-        //test_and_print(sequence, test_data.into_iter());
         test_and_assert(sequence, test_data.into_iter(), expected_data.into_iter());
     }
 
