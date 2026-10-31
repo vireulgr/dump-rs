@@ -40,14 +40,17 @@
     }
 
     #[allow(unused)]
+    #[inline]
     pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a)) -> Parser<'a, String> {
         make_parser_span_of_range(predicate, 0, 1 << 31 - 1)
     }
     #[allow(unused)]
+    #[inline]
     pub fn make_parser_span_of_exact<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), quantity: usize) -> Parser<'a, String> {
         make_parser_span_of_range(predicate, quantity, quantity)
     }
     #[allow(unused)]
+    #[inline]
     pub fn make_parser_span_of_at_least<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), at_least: usize) -> Parser<'a, String> {
         make_parser_span_of_range(predicate, at_least, 1 << 31 - 1)
     }
@@ -80,6 +83,16 @@
             };
 
             Some((parsed_string, rest_string))
+        })
+    }
+
+    pub fn make_parser_negate<'a>(parser: Parser<'a, String>) -> Parser<'a, String> {
+        Box::new(move |text: &str| {
+            let tmp_res = parser(text);
+            match tmp_res {
+                None => Some((String::from_iter(text.chars().take(1)), String::from_iter(text.chars().skip(1)))),
+                Some(_) => None
+            }
         })
     }
 
