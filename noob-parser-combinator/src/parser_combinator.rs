@@ -9,6 +9,11 @@
     }
 
     #[allow(unused)]
+    pub fn is_alphanumeric_predicate(c: &char) -> bool {
+        c.is_ascii_alphanumeric()
+    }
+
+    #[allow(unused)]
     pub fn whitespace_predicate(c: &char) -> bool {
         c.is_whitespace()
     }
@@ -34,22 +39,38 @@
         })
     }
 
+    #[allow(unused)]
+    pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a)) -> Parser<'a, String> {
+        make_parser_span_of_range(predicate, 0, 1 << 31 - 1)
+    }
+    #[allow(unused)]
+    pub fn make_parser_span_of_exact<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), quantity: usize) -> Parser<'a, String> {
+        make_parser_span_of_range(predicate, quantity, quantity)
+    }
+    #[allow(unused)]
+    pub fn make_parser_span_of_at_least<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), at_least: usize) -> Parser<'a, String> {
+        make_parser_span_of_range(predicate, at_least, 1 << 31 - 1)
+    }
+
     // captures cccc (where c is char) in strings like ccccamel
     #[allow(unused)]
-    pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), non_empty: bool) -> Parser<'a, String> {
+    pub fn make_parser_span_of_range<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), at_least: usize, at_most: usize) -> Parser<'a, String> {
         Box::new(move |text: &str| {
             let mut parsed_string = String::new();
             let mut text_iter = text.chars();
             let mut maybe_current_char = text_iter.next();
-            while maybe_current_char.is_some() {
+            let mut counter = 0usize;
+            while maybe_current_char.is_some() && counter < at_most {
                 let current_char = maybe_current_char.unwrap();
                 if !predicate(&current_char) {
                     break;
                 }
                 parsed_string.push(current_char);
+                counter += 1;
                 maybe_current_char = text_iter.next();
             }
-            if parsed_string.is_empty() && non_empty {
+
+            if parsed_string.len() < at_least {
                 return None;
             }
 
@@ -147,7 +168,7 @@ mod test {
 
     fn test_and_assert<'a, T, U, V>(parser: Parser<'a, T>, test_data: U, expected_data: V)
         where T: Debug + std::cmp::PartialEq,
-              U: Iterator<Item = &'a str>,
+              U: Iterator<Item = &'a &'a str>,
               V: Iterator<Item = ParserResult<T>>,
     {
         for item in std::iter::zip(test_data, expected_data) {
@@ -158,16 +179,28 @@ mod test {
 
     #[test]
     fn space_parser_works() {
-        let test_data = [" ", "    ", " some", "foo  ", ""];
+        let test_data = [" ", "     ", " some", "foo  ", "    bar", ""];
         let expected_data: Vec<ParserResult<String>> = vec![
             Some((" ".to_string(), "".to_string())),
-            Some(("    ".to_string(), "".to_string())),
+            Some(("     ".to_string(), "".to_string())),
             Some((" ".to_string(), "some".to_string())),
             Some(("".to_string(), "foo  ".to_string())),
+            Some(("    ".to_string(), "bar".to_string())),
             Some(("".to_string(), "".to_string())),
         ];
-        let spaces = make_parser_span_of(&whitespace_predicate, false);
-        test_and_assert(spaces, test_data.into_iter(), expected_data.into_iter());
+        let zero_or_more_spaces = make_parser_span_of(&whitespace_predicate);
+        test_and_assert(zero_or_more_spaces, test_data.iter(), expected_data.into_iter());
+
+        let expected_data: Vec<ParserResult<String>> = vec![
+            None,
+            Some(("   ".to_string(), "  ".to_string())),
+            None,
+            None,
+            Some(("   ".to_string(), " bar".to_string())),
+            None
+        ];
+        let three_spaces = make_parser_span_of_exact(&whitespace_predicate, 3);
+        test_and_assert(three_spaces, test_data.iter(), expected_data.into_iter());
     }
 
     #[test]
@@ -181,8 +214,8 @@ mod test {
             Some(("".to_string(), "".to_string())),
         ];
 
-        let natural = make_parser_span_of(&natural_number_predicate, false);
-        test_and_assert(natural, test_data.into_iter(), expected_data.into_iter());
+        let natural = make_parser_span_of(&natural_number_predicate);
+        test_and_assert(natural, test_data.iter(), expected_data.into_iter());
     }
 
     #[test]
@@ -196,7 +229,7 @@ mod test {
             None,
         ];
         let subs = make_parser_substring("foo");
-        test_and_assert(subs, test_data.into_iter(), expected_data.into_iter());
+        test_and_assert(subs, test_data.iter(), expected_data.into_iter());
     }
 
     #[test]
@@ -216,9 +249,9 @@ mod test {
         let sequence = make_parser_sequence(
             vec![
             make_parser_substring("foo"),
-            make_parser_span_of(&whitespace_predicate, true),
-            make_parser_span_of(&natural_number_predicate, true),
-            make_parser_span_of(&whitespace_predicate, false),
+            make_parser_span_of_at_least(&whitespace_predicate, 1),
+            make_parser_span_of_at_least(&natural_number_predicate, 1),
+            make_parser_span_of(&whitespace_predicate),
             make_parser_optional(
                 make_parser_one_of(
                     vec![
@@ -229,7 +262,7 @@ mod test {
                 "bar".to_string()
                 )
             ]);
-        test_and_assert(sequence, test_data.into_iter(), expected_data.into_iter());
+        test_and_assert(sequence, test_data.iter(), expected_data.into_iter());
     }
 
 
@@ -239,23 +272,23 @@ mod test {
                 make_parser_sequence(
                     vec![
                         make_parser_substring("foo"),
-                        make_parser_span_of(&whitespace_predicate, true),
-                        make_parser_span_of(&natural_number_predicate, true),
-                        make_parser_span_of(&whitespace_predicate, false),
+                        make_parser_span_of_at_least(&whitespace_predicate, 1),
+                        make_parser_span_of_at_least(&natural_number_predicate, 1),
+                        make_parser_span_of(&whitespace_predicate),
                     ]),
                 make_parser_sequence(
                     vec![
                         make_parser_substring("bar"),
-                        make_parser_span_of(&whitespace_predicate, true),
-                        make_parser_span_of(&natural_number_predicate, true),
-                        make_parser_span_of(&whitespace_predicate, false),
+                        make_parser_span_of_at_least(&whitespace_predicate, 1),
+                        make_parser_span_of_at_least(&natural_number_predicate, 1),
+                        make_parser_span_of(&whitespace_predicate),
                     ]),
                 make_parser_sequence(
                     vec![
                         make_parser_substring("baz"),
-                        make_parser_span_of(&whitespace_predicate, true),
-                        make_parser_span_of(&natural_number_predicate, true),
-                        make_parser_span_of(&whitespace_predicate, false),
+                        make_parser_span_of_at_least(&whitespace_predicate, 1),
+                        make_parser_span_of_at_least(&natural_number_predicate, 1),
+                        make_parser_span_of(&whitespace_predicate),
                     ]
                 )
             ]
@@ -284,7 +317,7 @@ mod test {
         ];
 
         let parser = make_one_of_parser_for_test();
-        test_and_assert(parser, test_data.into_iter(), test_results.into_iter());
+        test_and_assert(parser, test_data.iter(), test_results.into_iter());
     }
 
     fn make_zero_or_many_parser_for_test<'a>() -> Parser<'a, Vec<Vec<String>>> {
@@ -294,25 +327,25 @@ mod test {
                     make_parser_sequence(
                         vec![
                             make_parser_substring("forward"),
-                            make_parser_span_of(&whitespace_predicate, true),
-                            make_parser_span_of(&natural_number_predicate, true),
-                            make_parser_span_of(&whitespace_predicate, false),
+                            make_parser_span_of_at_least(&whitespace_predicate, 1),
+                            make_parser_span_of_at_least(&natural_number_predicate, 1),
+                            make_parser_span_of(&whitespace_predicate),
                         ]
                     ),
                     make_parser_sequence(
                         vec![
                             make_parser_substring("backward"),
-                            make_parser_span_of(&whitespace_predicate, true),
-                            make_parser_span_of(&natural_number_predicate, true),
-                            make_parser_span_of(&whitespace_predicate, false),
+                            make_parser_span_of_at_least(&whitespace_predicate, 1),
+                            make_parser_span_of_at_least(&natural_number_predicate, 1),
+                            make_parser_span_of(&whitespace_predicate),
                         ]
                     ),
                     make_parser_sequence(
                         vec![
                             make_parser_substring("rotate"),
-                            make_parser_span_of(&whitespace_predicate, true),
-                            make_parser_span_of(&natural_number_predicate, true),
-                            make_parser_span_of(&whitespace_predicate, true),
+                            make_parser_span_of_at_least(&whitespace_predicate, 1),
+                            make_parser_span_of_at_least(&natural_number_predicate, 1),
+                            make_parser_span_of_at_least(&whitespace_predicate, 1),
                             make_parser_optional(
                                 make_parser_one_of(
                                     vec![
@@ -322,7 +355,7 @@ mod test {
                                 ),
                                 "left".to_string()
                             ),
-                            make_parser_span_of(&whitespace_predicate, false)
+                            make_parser_span_of(&whitespace_predicate)
                         ]
                     )
                 ]
@@ -360,7 +393,7 @@ mod test {
         ];
 
         let parser = make_zero_or_many_parser_for_test();
-        test_and_assert(parser, test_data.into_iter(), test_results.into_iter());
+        test_and_assert(parser, test_data.iter(), test_results.into_iter());
     }
 
     #[test]
@@ -368,9 +401,9 @@ mod test {
         let parser1 = make_parser_sequence(
             vec![
             make_parser_substring("rotate"),
-            make_parser_span_of(&whitespace_predicate, true),
-            make_parser_span_of(&natural_number_predicate, true),
-            make_parser_span_of(&whitespace_predicate, false),
+            make_parser_span_of_at_least(&whitespace_predicate, 1),
+            make_parser_span_of_at_least(&natural_number_predicate, 1),
+            make_parser_span_of(&whitespace_predicate),
             make_parser_optional(
                 make_parser_one_of(
                     vec![
@@ -380,7 +413,7 @@ mod test {
                 ),
                 "left".to_string()
             ),
-            make_parser_span_of(&whitespace_predicate, false),
+            make_parser_span_of(&whitespace_predicate),
             ]);
         let transform = move |mut results: Vec<String>| {
             let mut result = HashMap::new();

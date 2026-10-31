@@ -11,6 +11,10 @@ fn run_and_print<'a, T, V>(parser: Parser<'a, T>, test_data: V)
     }
 }
 
+fn is_doubleu(c: &char) -> bool {
+    *c == 'w'
+}
+
 fn is_backslash(c: &char) -> bool {
     *c == '\\'
 }
@@ -19,13 +23,17 @@ fn is_not_backslash_or_quote(c: &char) -> bool {
     *c != '\\' && *c != '"'
 }
 
+fn is_not_quote(c: &char) -> bool {
+    *c != '"'
+}
+
 fn unquote(text: &str) -> String {
     let escaped_quote_parser = make_parser_sequence(
         vec![
-            make_parser_span_of(&is_backslash, true),
+            make_parser_span_of_at_least(&is_backslash, 1),
             make_parser_substring("\""),
-            make_parser_span_of(&is_not_backslash_or_quote, false),
-            make_parser_span_of(&is_backslash, true),
+            make_parser_span_of_at_least(&is_not_backslash_or_quote, 0),
+            make_parser_span_of_at_least(&is_backslash, 1),
             make_parser_substring("\"")
         ]
     );
@@ -45,25 +53,72 @@ fn unquote(text: &str) -> String {
 
 fn main() {
     let test_string = "\\\n\\\"wasya\\\n\\\"";
-    let test_string_3 = "\"this is string containing \"nested \\\"quotes\\\" and \\\n escape ch: \\\\\\\t\" and\n escape ch: \\\t\"";
+    let test_string_3 = "\"this is string containing \\\"nested \\\\\"quotes\\\\\" and \\\n escape ch: \\\\\\\t\\\" and\n escape ch: \\\t\"";
     //let _test_string_2 = "{ \"a\": \"some string with \\\"quotes\\\"\" }";
 
     //let result = unquote(test_string);
     //println!("{}", result);
-    let escaped_symbol_parser = make_parser_sequence(
-        vec![
-            make_parser_span_of(&is_backslash, true),
-            make_parser_one_of(
-                vec![
-                    make_parser_substring("\\"),
-                    make_parser_substring("\""),
-                    make_parser_substring("\n"),
-                    make_parser_substring("\r"),
-                    make_parser_substring("\t"),
-                ])
-        ]);
+    // let escaped_symbol_parser = make_parser_sequence(
+    //     vec![
+    //         make_parser_span_of(&is_backslash, true),
+    //         make_parser_one_of(
+    //             vec![
+    //                 make_parser_substring("\\"),
+    //                 make_parser_substring("\""),
+    //                 make_parser_substring("\n"),
+    //                 make_parser_substring("\r"),
+    //                 make_parser_substring("\t"),
+    //             ])
+    //     ]);
 
-    let result = escaped_symbol_parser(test_string);
+    // let result = escaped_symbol_parser(test_string);
+    // match result {
+    //     Some((parsed, rest)) => {
+    //         println!("parsed: {:?}; rest: {}", parsed, rest);
+    //     },
+    //     None => {
+    //         println!("no result");
+    //     }
+    // }
+
+    // let quoted_parser = make_parser_sequence(
+    //     vec![
+    //         make_parser_substring("\""),
+    //         make_parser_span_of(&is_not_quote, false),
+    //         make_parser_substring("\""),
+    //     ]);
+
+    // let result = quoted_parser(test_string_3);
+    // match result {
+    //     Some((parsed, rest)) => {
+    //         println!("parsed: {:?}; rest: {}", parsed, rest);
+    //     },
+    //     None => {
+    //         println!("no result");
+    //     }
+    // }
+    // let escaped_quote_parser = make_parser_sequence(
+    //     vec![
+    //         make_parser_span_of(&is_backslash, 0, 999),
+    //         make_parser_substring("\""),
+    //         make_parser_span_of(&is_not_backslash_or_quote, 0, 999),
+    //         make_parser_span_of(&is_backslash, 0, 899),
+    //         make_parser_substring("\"")
+    //     ]
+    // );
+    // let result = escaped_quote_parser(test_string_3);
+    // match result {
+    //     Some((parsed, rest)) => {
+    //         println!("parsed: {:?}; rest: {}", parsed, rest);
+    //     },
+    //     None => {
+    //         println!("no result");
+    //     }
+    // }
+
+    let test_string = "ww";
+    let escaped_quote_parser = make_parser_span_of_at_least(&is_doubleu, 3);
+    let result = escaped_quote_parser(test_string);
     match result {
         Some((parsed, rest)) => {
             println!("parsed: {:?}; rest: {}", parsed, rest);
