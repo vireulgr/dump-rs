@@ -11,44 +11,8 @@ fn run_and_print<'a, T, V>(parser: Parser<'a, T>, test_data: V)
     }
 }
 
-fn is_doubleu(c: &char) -> bool {
-    *c == 'w'
-}
-
 fn is_backslash(c: &char) -> bool {
     *c == '\\'
-}
-
-fn is_not_backslash_or_quote(c: &char) -> bool {
-    *c != '\\' && *c != '"'
-}
-
-fn is_not_quote(c: &char) -> bool {
-    *c != '"'
-}
-
-fn unquote(text: &str) -> String {
-    let escaped_quote_parser = make_parser_sequence(
-        vec![
-            make_parser_span_of_at_least(&is_backslash, 1),
-            make_parser_substring("\""),
-            make_parser_span_of_at_least(&is_not_backslash_or_quote, 0),
-            make_parser_span_of_at_least(&is_backslash, 1),
-            make_parser_substring("\"")
-        ]
-    );
-    let parsed = escaped_quote_parser(text);
-
-    match parsed {
-        Some((parsed, rest)) => {
-            println!("parsed: {:?}; rest: {}", parsed, rest);
-        },
-        None => {
-            println!("no result");
-        }
-    }
-
-    String::new()
 }
 
 fn main() {
@@ -72,46 +36,30 @@ fn main() {
     //     ]);
     // let result = escaped_symbol_parser(test_string);
 
-    // let quoted_parser = make_parser_sequence(
-    //     vec![
-    //         make_parser_substring("\""),
-    //         make_parser_span_of(&is_not_quote, false),
-    //         make_parser_substring("\""),
-    //     ]);
-    // let result = quoted_parser(test_string_3);
 
-    // let escaped_quote_parser = make_parser_sequence(
-    //     vec![
-    //         make_parser_span_of(&is_backslash),
-    //         make_parser_substring("\""),
-    //         make_parser_span_of(&is_not_backslash_or_quote),
-    //         make_parser_span_of(&is_backslash),
-    //         make_parser_substring("\"")
-    //     ]);
-    // let result = escaped_quote_parser(test_string_3);
+    let level = 1;
+    let parser_escaped_quote = make_parser_sequence(
+                        vec![
+                            make_parser_span_of_exact(&is_backslash, level),
+                            make_parser_substring("\""),
+                        ]
+                    );
 
+    //let result = parser_escaped_quote("\\\\\\\"");
 
-    let not_wasya = make_parser_zero_or_many(
-        make_parser_negate(make_parser_substring("wasya")),
-        true
-    );
+    let parser_inside_quoted = make_parser_zero_or_many(make_parser_negate(parser_escaped_quote, level + 1), false);
+    let result = parser_inside_quoted("\\\\wl\\\\\"wlkerjl\\\"kekrjw\"jer");
 
-    let result = not_wasya("wasya");
+    //let quoted_parser = make_parser_sequence(
+    //    vec![
+    //        make_parser_substring("\""),
+    //        parser_inside_quoted,
+    //        make_parser_substring("\""),
+    //    ]);
+    //let result = quoted_parser("\"lwkejrlwkejr\"");
+
     match result {
-        Some((parsed, rest)) => {
-            println!("parsed: {:?}; rest: {}", parsed, rest);
-        },
-        None => {
-            println!("no result");
-        }
-    }
-    let result = not_wasya("not_wasya");
-    match result {
-        Some((parsed, rest)) => {
-            println!("parsed: {:?}; rest: {}", parsed, rest);
-        },
-        None => {
-            println!("no result");
-        }
+        Some((parsed, rest)) => println!("parsed: {:?}\nrest: {}", parsed, rest),
+        None => println!("No result")
     }
 }

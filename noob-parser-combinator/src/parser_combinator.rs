@@ -1,4 +1,3 @@
-
 //pub mod parser_combinator {
     pub type ParserResult<T> = Option<(T, String)>;
     pub type Parser<'a, T> = Box<dyn Fn(&str) -> ParserResult<T> + 'a>;
@@ -86,12 +85,12 @@
         })
     }
 
-    pub fn make_parser_negate<'a>(parser: Parser<'a, String>) -> Parser<'a, String> {
+    pub fn make_parser_negate<'a, T: 'a>(parser: Parser<'a, T>, stride: usize) -> Parser<'a, String> {
         Box::new(move |text: &str| {
             let tmp_res = parser(text);
             match tmp_res {
-                None => Some((String::from_iter(text.chars().take(1)), String::from_iter(text.chars().skip(1)))),
-                Some(_) => None
+                None => Some((String::from_iter(text.chars().take(stride)), String::from_iter(text.chars().skip(stride)))),
+                Some((_, _)) => None
             }
         })
     }
