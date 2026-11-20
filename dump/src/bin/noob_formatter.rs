@@ -10,12 +10,10 @@ struct Config {
 fn parse_args<'a, T>(args: &mut T) -> Result<Config, &'static str>
 where T: Iterator<Item = String>
 {
-    args.next();
-    let file_name = match args.next() {
-        Some(s) => s,
-        None => {
-            return Err("No file name in params!")
-        }
+    args.next(); // skip binary path
+    let Some(file_name) = args.next() 
+    else {
+        return Err("No file name in params!")
     };
     Ok(Config { file_name })
 }

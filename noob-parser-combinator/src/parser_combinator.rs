@@ -86,6 +86,7 @@
         })
     }
 
+/*
     pub fn make_parser_negate<'a>(parser: Parser<'a, String>) -> Parser<'a, String> {
         Box::new(move |text: &str| {
             let tmp_res = parser(text);
@@ -95,6 +96,7 @@
             }
         })
     }
+*/
 
     // as /abcd/ in regex
     #[allow(unused)]
@@ -168,6 +170,40 @@
         Box::new(move |text: &str| {
             parser(text)
                 .map(move |item| (transform(item.0), item.1))
+        })
+    }
+
+    #[allow(unused)]
+    pub fn make_parser_quoted<'a>() -> Parser<'a, String> {
+        Box::new(move |text: &str| {
+            let mut iter = text.chars();
+            let mut parsed = String::from("");
+            let mut is_escaped = false;
+            //let mut index = 0;
+            while let Some(ch) = iter.next() {
+                match ch {
+                    '"' if is_escaped => {
+                        //println!("{} escaped quote", index);
+                        parsed.push(ch);
+                        is_escaped = false; 
+                    },
+                    '"' if !is_escaped => { /*println!("end in {index}");*/ break; },
+                    '\\' if is_escaped => {
+                        //println!("{} escaped slash", index);
+                        parsed.push(ch);
+                        is_escaped = false;
+                    },
+                    '\\' if !is_escaped => {
+                        //println!("{} backslash", index);
+                        is_escaped = true;
+                        parsed.push(ch);
+                    },
+                    _ => parsed.push(ch)
+                }
+                //index += 1;
+            }
+
+            Some((parsed, String::from_iter(iter)))
         })
     }
 //}
