@@ -19,12 +19,12 @@ fn main() {
         None => println!("none"),
         Some((parsed, rest)) => println!("parsed {:?}, rest {}", parsed, rest),
     }
-    let result = parser("\"wasya\": true, \"petya\" : null, \"kostya\": 123142, \"foo\": \"bar\"");
+    let result = parser("{}");
     match result {
         None => println!("none"),
         Some((parsed, rest)) => println!("parsed {:?}, rest {}", parsed, rest),
     }
-    let result = parser("");
+    let result = parser("{\"wasya\": true, \"petya\" : null, \"kostya\": 123142, \"foo\": \"bar\"}");
     match result {
         None => println!("none"),
         Some((parsed, rest)) => println!("parsed {:?}, rest {}", parsed, rest),

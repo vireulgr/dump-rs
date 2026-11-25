@@ -98,6 +98,28 @@ use std::collections::HashMap;
     }
 */
 
+    pub fn make_parser_parenthesis<'a, T: 'a, U: 'a>(open_bracket_parser:  Parser<'a, U>, content_parser: Parser<'a, T>, close_bracket_parser: Parser<'a, U>) -> Parser<'a, T> {
+        Box::new(move |text: &str| {
+            println!("parenthesis parser input '{text}'");
+            let Some((_, rest)) = open_bracket_parser(text) else {
+                eprintln!("open bracket parse failed");
+                return None;
+            };
+
+            let Some((parsed, rest2)) = content_parser(&rest) else {
+                eprintln!("content parse failed");
+                return None;
+            };
+
+            let Some((_, rest3)) = close_bracket_parser(&rest2) else {
+                eprintln!("close bracket parse failed");
+                return None;
+            };
+
+            Some((parsed, rest3))
+        })
+    }
+
     // as /abcd/ in regex
     #[allow(unused)]
     pub fn make_parser_sequence<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, Vec<T>> {
@@ -293,13 +315,21 @@ use std::collections::HashMap;
             );
         let key_value_list_parser = make_parser_items_with_separator(key_value_parser, separator_parser);
 
-        let some = make_parser_sequence(
-            vec![
-                make_parser_substring("{"),
-                make_parser_items_with_separator(key_value_parser, separator_parser),
-                //key_value_list_parser,
-                make_parser_substring("}")
-            ]
+        let some = make_parser_parenthesis(
+            make_parser_sequence(
+                vec![
+                    make_parser_substring("{"),
+                    make_parser_span_of_range(&whitespace_predicate, 0, 256),
+                ]
+            ),
+            key_value_list_parser,
+         
+            make_parser_sequence(
+                vec![
+                    make_parser_span_of_range(&whitespace_predicate, 0, 256),
+                    make_parser_substring("}"),
+                ]
+            )
         );
 
         let transform = Box::new(|obj: Vec<Vec<String>>| {
