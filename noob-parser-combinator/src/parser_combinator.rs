@@ -1,15 +1,13 @@
+use std::collections::HashMap;
+
 //pub mod parser_combinator {
     pub type ParserResult<T> = Option<(T, String)>;
     pub type Parser<'a, T> = Box<dyn Fn(&str) -> ParserResult<T> + 'a>;
 
     #[allow(unused)]
     pub fn natural_number_predicate(c: &char) -> bool {
+        //println!("nat num pred char {}", c);
         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].binary_search(c).is_ok()
-    }
-
-    #[allow(unused)]
-    pub fn is_alphanumeric_predicate(c: &char) -> bool {
-        c.is_ascii_alphanumeric()
     }
 
     #[allow(unused)]
@@ -21,6 +19,7 @@
     #[allow(unused)]
     pub fn make_parser_substring<'a>(pattern: &'a str) -> Parser<'a, String> {
         Box::new(move |text: &str| {
+            //println!("substr: {text}, pattern: {pattern}");
             if text.starts_with(pattern) {
                 return Some(
                     (
@@ -41,7 +40,7 @@
     #[allow(unused)]
     #[inline]
     pub fn make_parser_span_of<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a)) -> Parser<'a, String> {
-        make_parser_span_of_range(predicate, 0, 1 << 31 - 1)
+        make_parser_span_of_range(predicate, 0, (1 << 31) - 1)
     }
     #[allow(unused)]
     #[inline]
@@ -51,13 +50,14 @@
     #[allow(unused)]
     #[inline]
     pub fn make_parser_span_of_at_least<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), at_least: usize) -> Parser<'a, String> {
-        make_parser_span_of_range(predicate, at_least, 1 << 31 - 1)
+        make_parser_span_of_range(predicate, at_least, (1 << 31) - 1)
     }
 
     // captures cccc (where c is char) in strings like ccccamel
     #[allow(unused)]
     pub fn make_parser_span_of_range<'a>(predicate: &'a (dyn Fn(&char) -> bool + 'a), at_least: usize, at_most: usize) -> Parser<'a, String> {
         Box::new(move |text: &str| {
+            //println!("span of range input text '{text}'");
             let mut parsed_string = String::new();
             let mut text_iter = text.chars();
             let mut maybe_current_char = text_iter.next();
@@ -81,6 +81,7 @@
                 None => String::from_iter(text_iter)
             };
 
+            //println!("span of range returning '{parsed_string}', rest: '{rest_string}'");
             Some((parsed_string, rest_string))
         })
     }
@@ -101,6 +102,7 @@
     #[allow(unused)]
     pub fn make_parser_sequence<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, Vec<T>> {
         Box::new(move |text: &str| {
+            println!("sequence parser input '{text}'");
             let mut results: Vec<T> = Vec::new();
             let mut temp = String::from(text);
             for parser in &parsers {
@@ -120,6 +122,7 @@
     #[allow(unused)]
     pub fn make_parser_one_of<'a, T: 'a>(parsers: Vec<Parser<'a, T>>) -> Parser<'a, T> {
         Box::new(move |text: &str| {
+            //println!("one of parser text: {text}");
             for parser in &parsers {
                 let result = parser(&text);
                 if result.is_some() {
@@ -165,10 +168,11 @@
     }
 
     #[allow(unused)]
-    fn make_parser_map<'a, T, U>(transform: &'a (dyn Fn(T) -> U + 'a), parser: Parser<'a, T>) -> Parser<'a, U> {
+    fn make_parser_map<'a, T: 'a, U: 'a>(transform: Box<(dyn Fn(T) -> U)>, parser: Parser<'a, T>) -> Parser<'a, U> {
+        let local_transformer = transform;
         Box::new(move |text: &str| {
             parser(text)
-                .map(move |item| (transform(item.0), item.1))
+                .map(|item| (local_transformer(item.0), item.1))
         })
     }
 
@@ -204,6 +208,116 @@
 
             Some((parsed, String::from_iter(iter)))
         })
+    }
+
+    #[allow(unused)]
+    pub fn make_parser_items_with_separator<'a, T: 'a, U: 'a>(item_parser: Parser<'a, T>, separator_parser: Parser<'a, U>) -> Parser<'a, Vec<T>> {
+        Box::new(move |text: &str| {
+            let mut parsed_results: Vec<T> = vec![];
+            let Some((parsed, rest)) = item_parser(text) else {
+                //eprintln!("error parsing item in {}", text);
+                return Some((parsed_results, text.to_string()));
+            };
+
+            //println!("after first item parsed: {parsed}, rest: {rest}");
+            parsed_results.push(parsed);
+
+            let mut to_be_parsed = rest;
+            loop {
+                //println!("item rest: '{to_be_parsed}'");
+                let Some((_, sep_rest)) = separator_parser(&to_be_parsed) else {
+                    //eprintln!("error parsing separator in {}", &residual);
+                    //break residual;
+                    break;
+                };
+
+                to_be_parsed = sep_rest;
+                //println!("sep rest: '{residual}'");
+                let Some((parsed, rest)) = item_parser(&to_be_parsed) else {
+                    //eprintln!("error parsing item in {}", &residual);
+                    //break residual;
+                    break;
+                };
+
+                to_be_parsed = rest;
+                parsed_results.push(parsed);
+            };
+
+            Some((parsed_results, to_be_parsed))
+        })
+    }
+
+    pub fn make_parser_quoted_string<'a>() -> Parser<'a, String> {
+        let parser = make_parser_sequence(
+            vec![
+                make_parser_substring("\""),
+                make_parser_quoted(),
+            ]
+        );
+
+        let transform = Box::new(|obj: Vec<String>| -> String {
+            println!("trnfrm v<s> {:?}", obj);
+            //obj.into_iter().fold(String::new(), |mut acc, part| { acc.push_str(&part); return acc; } )
+            obj.into_iter().nth(1).unwrap().into()
+        }
+        );
+        make_parser_map(transform, parser)
+    }
+
+    pub fn make_parser_json_object<'a>() -> Parser<'a, HashMap<String, String>> {
+        let value_parser = make_parser_one_of(
+                vec![
+                    make_parser_quoted_string(),
+                    make_parser_span_of_range(&natural_number_predicate, 1, 10),
+                    make_parser_substring("true"),
+                    make_parser_substring("false"),
+                    make_parser_substring("null"),
+                    // TODO parser for floating point number
+                ]
+            );
+        let key_value_parser = make_parser_sequence(
+                vec![
+                    make_parser_quoted_string(),
+                    make_parser_span_of(&whitespace_predicate),
+                    make_parser_substring(":"),
+                    make_parser_span_of(&whitespace_predicate),
+                    value_parser
+                ]
+            );
+        let separator_parser = make_parser_sequence(
+                vec![
+                    make_parser_span_of_range(&whitespace_predicate, 0, 1024),
+                    make_parser_substring(","),
+                    make_parser_span_of_range(&whitespace_predicate, 0, 1024)
+                ]
+            );
+        let key_value_list_parser = make_parser_items_with_separator(key_value_parser, separator_parser);
+
+        let some = make_parser_sequence(
+            vec![
+                make_parser_substring("{"),
+                make_parser_items_with_separator(key_value_parser, separator_parser),
+                //key_value_list_parser,
+                make_parser_substring("}")
+            ]
+        );
+
+        let transform = Box::new(|obj: Vec<Vec<String>>| {
+            //println!("trnfrm {:?}", obj);
+            let mut hash_map = HashMap::new();
+
+            for item in obj.into_iter() {
+                //println!("trnfrm item {:?}", &item);
+                let mut item_iter = item.into_iter();
+                let key: String = item_iter.next().unwrap().into();
+                // "key","<space>", ":", "<space>", "value"
+                let val: String = item_iter.skip(3).next().unwrap().into();
+                hash_map.insert(key, val);
+            }
+            hash_map
+        });
+
+        make_parser_map(transform, some)
     }
 //}
 
@@ -463,7 +577,7 @@ mod test {
             ),
             make_parser_span_of(&whitespace_predicate),
             ]);
-        let transform = move |mut results: Vec<String>| {
+        let transform = Box::new(|mut results: Vec<String>| {
             let mut result = HashMap::new();
             if results.len() < 5 {
                 return result;
@@ -480,8 +594,8 @@ mod test {
 
             result
 
-        };
-        let parser2 = make_parser_map(&transform, parser1);
+        });
+        let parser2 = make_parser_map(transform, parser1);
 
         let test_data = [
             "rotate 235 right",
@@ -507,5 +621,37 @@ mod test {
         assert!(parser_result3.0.contains_key("angle"));
         assert_eq!(parser_result3.0.get(&String::from("angle")), Some(&String::from("45")));
         assert_eq!(parser_result3.0.get(&String::from("direction")), Some(&String::from("left")));
+    }
+
+    #[test]
+    pub fn list_of_items_parser_works() {
+        let item_parser = make_parser_one_of(
+            vec![
+                make_parser_span_of_range(&natural_number_predicate, 1, 8),
+                make_parser_substring("null")
+            ]
+        );
+        let separator_parser = make_parser_sequence(
+            vec![
+                make_parser_span_of_range(&whitespace_predicate, 0, 8),
+                make_parser_substring(","),
+                make_parser_span_of_range(&whitespace_predicate, 0, 8),
+            ]
+        );
+        let parser = make_parser_items_with_separator(item_parser, separator_parser);
+
+
+        let result = parser("");
+        assert_eq!(result, Some((vec![], String::from(""))));
+
+        let result = parser("0");
+        assert_eq!(result, Some((vec!["0".to_string()], String::from(""))));
+
+        let result = parser("null,");
+        assert_eq!(result, Some((vec!["null".to_string()], String::from(""))));
+
+        let result = parser("null, 123, 3213, null, 0");
+        assert_eq!(result, Some((vec!["null".to_string(), "123".to_string(), "3213".to_string(), "null".to_string(), "0".to_string()], String::from(""))));
+
     }
 }
